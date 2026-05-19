@@ -128,6 +128,32 @@ export default function PlanningPage() {
     }
   };
 
+  // Toggle Status directly by clicking the status badge
+  const handleToggleStatus = (item: PlanningItem) => {
+    const nextStatus = item.status === 'done' ? 'waiting' : 'done';
+    const payload = {
+      name: item.name,
+      amount_min: item.amount_min,
+      amount_max: item.amount_max,
+      type: item.type,
+      description: item.description || undefined,
+      priority: item.priority || 'medium',
+      status: nextStatus
+    };
+    
+    // Optimistic local update for zero-latency instant feedback
+    setBudgets(prev => prev.map(b => b.id === item.id ? { ...b, status: nextStatus } : b));
+    
+    api.updatePlanning(item.id, payload)
+      .then(() => {
+        fetchBudgets();
+      })
+      .catch(err => {
+        alert(err.message || 'Failed to toggle status');
+        fetchBudgets();
+      });
+  };
+
   // Define Filter Columns
   const filterColumns: FilterColumn[] = [
     { id: 'name', label: 'Name', type: 'text' },
@@ -201,13 +227,17 @@ export default function PlanningPage() {
                       </span>
                     </td>
                     <td className="py-3.5 capitalize">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-bold border ${
-                        item.status === 'done' 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                          : 'bg-neutral-50 text-neutral-500 border-neutral-200'
-                      }`}>
-                        {item.status || 'waiting'}
-                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(item)}
+                        className={`inline-flex px-2 py-0.5 rounded text-xs font-bold border transition cursor-pointer hover:opacity-85 active:scale-95 select-none ${
+                          item.status === 'done' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                            : 'bg-neutral-50 text-neutral-500 border-neutral-200'
+                        }`}
+                        title="Click to toggle status (Waiting / Done)"
+                      >
+                        {item.status === 'done' ? '✅ Done' : '⏳ Waiting'}
+                      </button>
                     </td>
                     <td className="py-3.5 text-neutral-500 text-xs max-w-[250px] truncate">
                       {item.description || '—'}
