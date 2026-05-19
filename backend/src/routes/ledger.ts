@@ -6,7 +6,7 @@ const router = Router();
 // GET /api/ledger - List ledger entries with filter options
 router.get('/', (req: Request, res: Response) => {
   try {
-    const { entry_type, date_min, date_max, amount_min, amount_max } = req.query;
+    const { entry_type, date_min, date_max, amount_min, amount_max, type } = req.query;
 
     let query = `
       SELECT 
@@ -29,6 +29,13 @@ router.get('/', (req: Request, res: Response) => {
       const types = (entry_type as string).split(',');
       const placeholders = types.map(() => '?').join(',');
       query += ` AND l.entry_type IN (${placeholders})`;
+      params.push(...types);
+    }
+
+    if (type) {
+      const types = (type as string).split(',');
+      const placeholders = types.map(() => '?').join(',');
+      query += ` AND COALESCE(i.type, e.type) IN (${placeholders})`;
       params.push(...types);
     }
 

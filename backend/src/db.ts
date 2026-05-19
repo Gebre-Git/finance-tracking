@@ -38,14 +38,21 @@ function parseAndFilter(sql: string, params: any[], items: any[]): any[] {
   // Tokenize the SQL string by " AND " clauses
   const clauses = sql.replace(/\s+/g, ' ').split(/ AND /i);
   
+  // Helper to extract field name from SQL clause
+  const getField = (clauseStr: string) => {
+    let field = clauseStr.split(/\s+/)[0];
+    if (clauseStr.toLowerCase().startsWith('coalesce(')) {
+      if (clauseStr.toLowerCase().includes('type')) return 'type';
+      if (clauseStr.toLowerCase().includes('amount')) return 'amount';
+    }
+    return field.replace('l.', '').replace('i.', '').replace('e.', '').replace('p.', '');
+  };
+
   for (let i = 1; i < clauses.length; i++) {
     const clause = clauses[i].trim();
     
     if (clause.toLowerCase().includes('in (')) {
-      const field = clause.split(/\s+/)[0]
-        .replace('l.', '')
-        .replace('i.', '')
-        .replace('e.', '');
+      const field = getField(clause);
       const placeholdersCount = (clause.match(/\?/g) || []).length;
       const allowedValues = params.slice(paramIdx, paramIdx + placeholdersCount).map(v => String(v));
       paramIdx += placeholdersCount;
@@ -53,11 +60,7 @@ function parseAndFilter(sql: string, params: any[], items: any[]): any[] {
       filteredItems = filteredItems.filter(item => allowedValues.includes(String(item[field])));
     } 
     else if (clause.includes('>= ?')) {
-      const field = clause.split(/\s+/)[0]
-        .replace('l.', '')
-        .replace('i.', '')
-        .replace('e.', '')
-        .replace('coalesce(i.amount, e.amount, 0)', 'amount');
+      const field = getField(clause);
       const val = params[paramIdx++];
       filteredItems = filteredItems.filter(item => {
         const itemVal = item[field];
@@ -66,11 +69,7 @@ function parseAndFilter(sql: string, params: any[], items: any[]): any[] {
       });
     } 
     else if (clause.includes('<= ?')) {
-      const field = clause.split(/\s+/)[0]
-        .replace('l.', '')
-        .replace('i.', '')
-        .replace('e.', '')
-        .replace('coalesce(i.amount, e.amount, 0)', 'amount');
+      const field = getField(clause);
       const val = params[paramIdx++];
       filteredItems = filteredItems.filter(item => {
         const itemVal = item[field];
@@ -79,18 +78,12 @@ function parseAndFilter(sql: string, params: any[], items: any[]): any[] {
       });
     } 
     else if (clause.includes('like ?')) {
-      const field = clause.split(/\s+/)[0]
-        .replace('l.', '')
-        .replace('i.', '')
-        .replace('e.', '');
+      const field = getField(clause);
       const searchTerm = params[paramIdx++].toString().replace(/%/g, '').toLowerCase();
       filteredItems = filteredItems.filter(item => item[field]?.toString().toLowerCase().includes(searchTerm));
     } 
     else if (clause.includes('= ?')) {
-      const field = clause.split(/\s+/)[0]
-        .replace('l.', '')
-        .replace('i.', '')
-        .replace('e.', '');
+      const field = getField(clause);
       const val = params[paramIdx++];
       filteredItems = filteredItems.filter(item => String(item[field]) === String(val));
     }
