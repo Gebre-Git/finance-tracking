@@ -145,9 +145,6 @@ export default function PlanningPage() {
     setBudgets(prev => prev.map(b => b.id === item.id ? { ...b, status: nextStatus } : b));
     
     api.updatePlanning(item.id, payload)
-      .then(() => {
-        fetchBudgets();
-      })
       .catch(err => {
         alert(err.message || 'Failed to toggle status');
         fetchBudgets();
@@ -236,7 +233,7 @@ export default function PlanningPage() {
                         }`}
                         title="Click to toggle status (Waiting / Done)"
                       >
-                        {item.status === 'done' ? '✅ Done' : '⏳ Waiting'}
+                        {item.status === 'done' ? '✅ Done' : 'Waiting'}
                       </button>
                     </td>
                     <td className="py-3.5 text-neutral-500 text-xs max-w-[250px] truncate">
@@ -356,7 +353,7 @@ export default function PlanningPage() {
                   onChange={(e) => setStatus(e.target.value as any)}
                   className="w-full text-sm px-3 py-2 bg-neutral-50 border border-border rounded-lg focus:outline-none focus:border-accent font-medium capitalize"
                 >
-                  <option value="waiting">⏳ Waiting</option>
+                  <option value="waiting">Waiting</option>
                   <option value="done">✅ Done</option>
                 </select>
               </div>
