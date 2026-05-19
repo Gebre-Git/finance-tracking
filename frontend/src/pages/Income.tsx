@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, Income } from '../api';
 import FilterBar, { FilterColumn } from '../components/FilterBar';
 import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface IncomePageProps {
   onHighlightLedgerRow: (refId: number, entryType: 'income' | 'expense') => void;
@@ -20,6 +21,9 @@ export default function IncomePage({ onHighlightLedgerRow, onRefreshTrigger }: I
   const [type, setType] = useState<'family' | 'work'>('work');
   const [source, setSource] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Delete Confirmation State
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Fetch Incomes
   const fetchIncomes = () => {
@@ -80,13 +84,21 @@ export default function IncomePage({ onHighlightLedgerRow, onRefreshTrigger }: I
   // Delete Handler
   const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent trigger highlighting
-    if (confirm('Are you sure you want to delete this income entry? The ledger will adjust automatically.')) {
-      api.deleteIncome(id)
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmId !== null) {
+      api.deleteIncome(deleteConfirmId)
         .then(() => {
           fetchIncomes();
           onRefreshTrigger();
+          setDeleteConfirmId(null);
         })
-        .catch(err => alert(err.message || 'Failed to delete'));
+        .catch(err => {
+          alert(err.message || 'Failed to delete');
+          setDeleteConfirmId(null);
+        });
     }
   };
 
@@ -249,6 +261,14 @@ export default function IncomePage({ onHighlightLedgerRow, onRefreshTrigger }: I
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title="Delete Income Entry"
+        message="Are you sure you want to delete this income entry? The ledger will adjust automatically."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
 
     </div>
   );

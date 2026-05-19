@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, Expense } from '../api';
 import FilterBar, { FilterColumn } from '../components/FilterBar';
 import { Plus, X, Trash2, ArrowRight, ShieldCheck, HelpCircle } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface ExpensesPageProps {
   onHighlightLedgerRow: (refId: number, entryType: 'income' | 'expense') => void;
@@ -23,6 +24,9 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [planned, setPlanned] = useState(false);
+
+  // Delete Confirmation State
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [type, setType] = useState<Expense['type']>('food');
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -89,13 +93,21 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
   // Delete Handler
   const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent trigger highlighting
-    if (confirm('Are you sure you want to delete this expense? The ledger will adjust automatically.')) {
-      api.deleteExpense(id)
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmId !== null) {
+      api.deleteExpense(deleteConfirmId)
         .then(() => {
           fetchExpenses();
           onRefreshTrigger();
+          setDeleteConfirmId(null);
         })
-        .catch(err => alert(err.message || 'Failed to delete'));
+        .catch(err => {
+          alert(err.message || 'Failed to delete');
+          setDeleteConfirmId(null);
+        });
     }
   };
 
@@ -286,6 +298,14 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title="Delete Expense Entry"
+        message="Are you sure you want to delete this expense? The ledger will adjust automatically."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
 
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, PlanningItem } from '../api';
 import FilterBar, { FilterColumn } from '../components/FilterBar';
 import { Plus, X, Trash2, Edit3 } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 const BUDGET_TYPES = [
   'emergency', 'clothing', 'electronics', 'food', 'coffee', 
@@ -16,6 +17,9 @@ export default function PlanningPage() {
 
   // Edit target state
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  // Delete Confirmation State
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -119,12 +123,20 @@ export default function PlanningPage() {
 
   // Delete Handler
   const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this planning item?')) {
-      api.deletePlanning(id)
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmId !== null) {
+      api.deletePlanning(deleteConfirmId)
         .then(() => {
           fetchBudgets();
+          setDeleteConfirmId(null);
         })
-        .catch(err => alert(err.message || 'Failed to delete'));
+        .catch(err => {
+          alert(err.message || 'Failed to delete');
+          setDeleteConfirmId(null);
+        });
     }
   };
 
@@ -379,6 +391,14 @@ export default function PlanningPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title="Delete Planning Envelope"
+        message="Are you sure you want to delete this planning item?"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
 
     </div>
   );
