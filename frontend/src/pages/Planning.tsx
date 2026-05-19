@@ -24,6 +24,7 @@ export default function PlanningPage() {
   const [type, setType] = useState<PlanningItem['type']>('food');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [status, setStatus] = useState<'waiting' | 'done'>('waiting');
   const [formError, setFormError] = useState<string | null>(null);
 
   // Fetch Budget list
@@ -54,6 +55,7 @@ export default function PlanningPage() {
     setType('food');
     setDescription('');
     setPriority('medium');
+    setStatus('waiting');
     setFormError(null);
     setShowForm(true);
   };
@@ -67,6 +69,7 @@ export default function PlanningPage() {
     setType(item.type);
     setDescription(item.description || '');
     setPriority(item.priority || 'medium');
+    setStatus(item.status || 'waiting');
     setFormError(null);
     setShowForm(true);
   };
@@ -87,7 +90,8 @@ export default function PlanningPage() {
       amount_max: Number(amountMax),
       type,
       description: description.trim() || undefined,
-      priority
+      priority,
+      status
     };
 
     if (editingId) {
@@ -129,6 +133,7 @@ export default function PlanningPage() {
     { id: 'name', label: 'Name', type: 'text' },
     { id: 'type', label: 'Type', type: 'categorical', options: BUDGET_TYPES },
     { id: 'priority', label: 'Priority', type: 'categorical', options: ['high', 'medium', 'low'] },
+    { id: 'status', label: 'Status', type: 'categorical', options: ['waiting', 'done'] },
     { id: 'amount', label: 'Target Range', type: 'numeric' },
   ];
 
@@ -173,6 +178,7 @@ export default function PlanningPage() {
                   <th className="pb-3 font-semibold">Target Range</th>
                   <th className="pb-3 font-semibold">Type</th>
                   <th className="pb-3 font-semibold">Priority</th>
+                  <th className="pb-3 font-semibold">Status</th>
                   <th className="pb-3 font-semibold">Description</th>
                   <th className="pb-3 font-semibold text-right">Actions</th>
                 </tr>
@@ -192,6 +198,15 @@ export default function PlanningPage() {
                     <td className="py-3.5 capitalize">
                       <span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold bg-neutral-100 text-neutral-700">
                         {item.priority || 'medium'}
+                      </span>
+                    </td>
+                    <td className="py-3.5 capitalize">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-bold border ${
+                        item.status === 'done' 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                          : 'bg-neutral-50 text-neutral-500 border-neutral-200'
+                      }`}>
+                        {item.status || 'waiting'}
                       </span>
                     </td>
                     <td className="py-3.5 text-neutral-500 text-xs max-w-[250px] truncate">
@@ -301,6 +316,18 @@ export default function PlanningPage() {
                   <option value="high">🔴 High</option>
                   <option value="medium">🟡 Medium</option>
                   <option value="low">🟢 Low</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1">Status</label>
+                <select 
+                  value={status} 
+                  onChange={(e) => setStatus(e.target.value as any)}
+                  className="w-full text-sm px-3 py-2 bg-neutral-50 border border-border rounded-lg focus:outline-none focus:border-accent font-medium capitalize"
+                >
+                  <option value="waiting">⏳ Waiting</option>
+                  <option value="done">✅ Done</option>
                 </select>
               </div>
 

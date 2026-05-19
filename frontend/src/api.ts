@@ -44,6 +44,7 @@ export interface PlanningItem {
   type: 'emergency' | 'clothing' | 'electronics' | 'food' | 'coffee' | 'self_care' | 'fund' | 'taxi' | 'digital' | 'lending' | 'unknown';
   description?: string | null;
   priority: 'high' | 'medium' | 'low';
+  status: 'waiting' | 'done';
 }
 
 export interface SummaryPeriod {
