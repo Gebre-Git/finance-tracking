@@ -5,7 +5,7 @@ const router = Router();
 
 const PLANNING_TYPES = [
   'emergency', 'clothing', 'electronics', 'food', 'coffee', 
-  'self_care', 'fund', 'taxi', 'digital', 'lending', 'unknown'
+  'self_care', 'fund', 'taxi', 'digital', 'lending', 'others', 'unknown'
 ];
 
 // GET /api/planning - List planning budgets

@@ -11,7 +11,7 @@ export interface Expense {
   name: string;
   amount: number;
   planned: number | boolean;
-  type: 'emergency' | 'clothing' | 'electronics' | 'food' | 'coffee' | 'self_care' | 'fund' | 'taxi' | 'digital' | 'lending' | 'unknown';
+  type: 'emergency' | 'clothing' | 'electronics' | 'food' | 'coffee' | 'self_care' | 'fund' | 'taxi' | 'digital' | 'lending' | 'others' | 'unknown';
   description?: string | null;
 }
 
@@ -41,7 +41,7 @@ export interface PlanningItem {
   name: string;
   amount_min: number;
   amount_max: number;
-  type: 'emergency' | 'clothing' | 'electronics' | 'food' | 'coffee' | 'self_care' | 'fund' | 'taxi' | 'digital' | 'lending' | 'unknown';
+  type: 'emergency' | 'clothing' | 'electronics' | 'food' | 'coffee' | 'self_care' | 'fund' | 'taxi' | 'digital' | 'lending' | 'others' | 'unknown';
   description?: string | null;
   priority: 'high' | 'medium' | 'low';
   status: 'waiting' | 'done';
