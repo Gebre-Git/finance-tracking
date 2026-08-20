@@ -134,6 +134,25 @@ router.put('/:id', (req: Request, res: Response) => {
   }
 });
 
+// POST /api/planning/reorder
+router.post('/reorder', (req: Request, res: Response) => {
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ error: 'IDs array is required' });
+  }
+
+  try {
+    const stmt = db.prepare('UPDATE planning SET position = ? WHERE id = ?');
+    ids.forEach((id: number, idx: number) => {
+      stmt.run(idx, id);
+    });
+    res.json({ success: true, message: 'Planning items reordered successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/planning/:id
 router.delete('/:id', (req: Request, res: Response) => {
   const id = Number(req.params.id);

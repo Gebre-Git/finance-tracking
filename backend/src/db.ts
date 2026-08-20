@@ -101,28 +101,43 @@ class Statement {
     const sqlLower = this.sql.toLowerCase();
 
     if (sqlLower.includes('insert into income')) {
-      const [name, amount, type, source] = params;
+      const [name, amount, type, source, created_at] = params;
       const newId = data.income.length > 0 ? Math.max(...data.income.map(i => i.id)) + 1 : 1;
-      data.income.push({ id: newId, name, amount: Number(amount), type, source });
+      data.income.push({
+        id: newId,
+        name,
+        amount: Number(amount),
+        type,
+        source,
+        created_at: created_at || new Date().toISOString()
+      });
       saveData(data);
       return { lastInsertRowid: newId, changes: 1 };
     }
 
     if (sqlLower.includes('insert into expense')) {
-      const [name, amount, planned, type, description] = params;
+      const [name, amount, planned, type, description, created_at] = params;
       const newId = data.expense.length > 0 ? Math.max(...data.expense.map(e => e.id)) + 1 : 1;
-      data.expense.push({ id: newId, name, amount: Number(amount), planned: Number(planned), type, description });
+      data.expense.push({
+        id: newId,
+        name,
+        amount: Number(amount),
+        planned: Number(planned),
+        type,
+        description,
+        created_at: created_at || new Date().toISOString()
+      });
       saveData(data);
       return { lastInsertRowid: newId, changes: 1 };
     }
 
     if (sqlLower.includes('insert into main_ledger')) {
-      const [name, entry_type, ref_id, total_remaining] = params;
+      const [name, entry_type, ref_id, total_remaining, created_at] = params;
       const newId = data.main_ledger.length > 0 ? Math.max(...data.main_ledger.map(l => l.id)) + 1 : 1;
       data.main_ledger.push({
         id: newId,
         name,
-        created_at: new Date().toISOString(),
+        created_at: created_at || new Date().toISOString(),
         entry_type,
         ref_id: Number(ref_id),
         total_remaining: Number(total_remaining)
@@ -153,6 +168,16 @@ class Statement {
       const row = data.main_ledger.find(l => l.id === entryId);
       if (row) {
         row.total_remaining = Number(balance);
+      }
+      saveData(data);
+      return { changes: 1 };
+    }
+
+    if (sqlLower.includes('update planning set position')) {
+      const [position, id] = params;
+      const row = data.planning.find(p => p.id === id);
+      if (row) {
+        row.position = Number(position);
       }
       saveData(data);
       return { changes: 1 };
@@ -241,32 +266,50 @@ class Statement {
     const data = loadData();
     const sqlLower = this.sql.toLowerCase();
 
-    if (sqlLower.includes('coalesce(i.amount, e.amount, 0) as amount') && sqlLower.includes('order by l.id asc')) {
+    if (sqlLower.includes('coalesce(i.amount, e.amount, 0) as amount') && (sqlLower.includes('order by l.id asc') || sqlLower.includes('order by l.created_at asc'))) {
       return data.main_ledger.map(l => {
         const inc = data.income.find(i => i.id === l.ref_id);
         const exp = data.expense.find(e => e.id === l.ref_id);
         return {
           id: l.id,
+          created_at: l.created_at,
           entry_type: l.entry_type,
           ref_id: l.ref_id,
           amount: l.entry_type === 'income' ? (inc?.amount || 0) : (exp?.amount || 0)
         };
-      }).sort((a, b) => a.id - b.id);
+      }).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id);
     }
 
     if (sqlLower.includes('from income')) {
       const result = [...data.income];
-      return parseAndFilter(this.sql, params, result).sort((a, b) => b.id - a.id);
+      return parseAndFilter(this.sql, params, result).sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return b.id - a.id;
+      });
     }
 
     if (sqlLower.includes('from expense')) {
       const result = [...data.expense];
-      return parseAndFilter(this.sql, params, result).sort((a, b) => b.id - a.id);
+      return parseAndFilter(this.sql, params, result).sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return b.id - a.id;
+      });
     }
 
     if (sqlLower.includes('from planning')) {
       const result = [...data.planning];
-      return parseAndFilter(this.sql, params, result).sort((a, b) => b.id - a.id);
+      return parseAndFilter(this.sql, params, result).sort((a, b) => {
+        const posA = a.position !== undefined ? a.position : 999999;
+        const posB = b.position !== undefined ? b.position : 999999;
+        if (posA !== posB) {
+          return posA - posB;
+        }
+        return b.id - a.id;
+      });
     }
 
     if (sqlLower.includes('from main_ledger')) {
@@ -287,9 +330,9 @@ class Statement {
 
       return parseAndFilter(this.sql, params, result).sort((a, b) => {
         if (sqlLower.includes('order by l.id asc') || sqlLower.includes('order by l.created_at asc')) {
-          return a.id - b.id;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id;
         }
-        return b.id - a.id;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || b.id - a.id;
       });
     }
 

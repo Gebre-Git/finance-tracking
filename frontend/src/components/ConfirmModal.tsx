@@ -33,7 +33,7 @@ export default function ConfirmModal({
       {/* Modal Container */}
       <div className="relative bg-white rounded-2xl shadow-xl border border-neutral-100 max-w-md w-full overflow-hidden p-6 transform scale-100 opacity-100 transition-all duration-300 flex flex-col items-center text-center">
         {/* Warning Icon Badge */}
-        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-4 animate-bounce">
+        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-4">
           <AlertTriangle className="w-6 h-6" />
         </div>
 

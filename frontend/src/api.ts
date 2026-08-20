@@ -4,6 +4,7 @@ export interface Income {
   amount: number;
   type: 'family' | 'work';
   source?: string | null;
+  created_at?: string;
 }
 
 export interface Expense {
@@ -13,6 +14,7 @@ export interface Expense {
   planned: number | boolean;
   type: 'emergency' | 'clothing' | 'electronics' | 'food' | 'coffee' | 'self_care' | 'fund' | 'taxi' | 'digital' | 'lending' | 'others' | 'unknown';
   description?: string | null;
+  created_at?: string;
 }
 
 export interface LedgerRow {
@@ -45,6 +47,7 @@ export interface PlanningItem {
   description?: string | null;
   priority: 'high' | 'medium' | 'low';
   status: 'waiting' | 'done';
+  position?: number;
 }
 
 export interface SummaryPeriod {
@@ -160,6 +163,12 @@ export const api = {
   deletePlanning: (id: number) => {
     return request<{ success: boolean; message: string }>(`/planning/${id}`, {
       method: 'DELETE',
+    });
+  },
+  reorderPlanning: (ids: number[]) => {
+    return request<{ success: boolean; message: string }>('/planning/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
     });
   },
 };

@@ -14,6 +14,16 @@ const EXPENSE_TYPES = [
   'self_care', 'fund', 'taxi', 'digital', 'lending', 'others', 'unknown'
 ];
 
+const getTodayDateTimeString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }: ExpensesPageProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,12 +34,13 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [planned, setPlanned] = useState(false);
+  const [type, setType] = useState<Expense['type']>('food');
+  const [description, setDescription] = useState('');
+  const [createdAt, setCreatedAt] = useState(getTodayDateTimeString());
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Delete Confirmation State
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [type, setType] = useState<Expense['type']>('food');
-  const [description, setDescription] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
 
   // Fetch Expenses
   const fetchExpenses = () => {
@@ -71,7 +82,8 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
       amount: Number(amount),
       planned: planned ? 1 : 0,
       type,
-      description: description.trim() || undefined
+      description: description.trim() || undefined,
+      created_at: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString()
     })
       .then(() => {
         // Reset state
@@ -80,6 +92,7 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
         setPlanned(false);
         setType('food');
         setDescription('');
+        setCreatedAt(getTodayDateTimeString());
         setShowAddForm(false);
         // Refresh Lists
         fetchExpenses();
@@ -122,7 +135,10 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
         </div>
 
         <button
-          onClick={() => setShowAddForm(true)}
+          onClick={() => {
+            setCreatedAt(getTodayDateTimeString());
+            setShowAddForm(true);
+          }}
           className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-sm font-semibold transition cursor-pointer shadow-premium"
         >
           <Plus className="w-4.5 h-4.5" />
@@ -149,6 +165,7 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
               <thead>
                 <tr className="border-b border-border text-muted font-semibold text-xs">
                   <th className="pb-3 font-semibold">Name</th>
+                  <th className="pb-3 font-semibold">Date/Time</th>
                   <th className="pb-3 font-semibold">Amount</th>
                   <th className="pb-3 font-semibold">Planned</th>
                   <th className="pb-3 font-semibold">Type</th>
@@ -169,6 +186,9 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
                         <span>{exp.name}</span>
                         <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-accent transition-all transform translate-x-[-4px] group-hover:translate-x-0" />
                       </div>
+                    </td>
+                    <td className="py-3.5 text-neutral-500 text-xs whitespace-nowrap">
+                      {exp.created_at ? new Date(exp.created_at).toLocaleString() : '—'}
                     </td>
                     <td className="py-3.5 font-bold text-neutral-700">
                       -{exp.amount.toLocaleString()} ETB
@@ -237,6 +257,18 @@ export default function ExpensesPage({ onHighlightLedgerRow, onRefreshTrigger }:
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
                   className="w-full text-sm px-3 py-2 bg-neutral-50 border border-border rounded-lg focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1">
+                  Date & Time <span className="text-[10px] text-neutral-400 font-normal lowercase">(defaults to now/today)</span>
+                </label>
+                <input 
+                  type="datetime-local" 
+                  value={createdAt} 
+                  onChange={(e) => setCreatedAt(e.target.value)}
+                  className="w-full text-sm px-3 py-2 bg-neutral-50 border border-border rounded-lg focus:outline-none focus:border-accent font-mono"
                 />
               </div>
 

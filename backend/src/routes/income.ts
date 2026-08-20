@@ -6,7 +6,7 @@ const router = Router();
 
 // POST /api/income - Add income entry + ledger row
 router.post('/', (req: Request, res: Response) => {
-  const { name, amount, type, source } = req.body;
+  const { name, amount, type, source, created_at } = req.body;
 
   if (!name || amount === undefined || !type) {
     return res.status(400).json({ error: 'Name, amount, and type are required' });
@@ -16,22 +16,24 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid type. Must be either family or work' });
   }
 
+  const timestamp = created_at ? new Date(created_at).toISOString() : new Date().toISOString();
+
   try {
     const incomeId = runInTransaction(() => {
       // 1. Insert income
       const insertIncome = db.prepare(`
-        INSERT INTO income (name, amount, type, source)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO income (name, amount, type, source, created_at)
+        VALUES (?, ?, ?, ?, ?)
       `);
-      const result = insertIncome.run(name, Number(amount), type, source || null) as any;
+      const result = insertIncome.run(name, Number(amount), type, source || null, timestamp) as any;
       const newId = Number(result.lastInsertRowid);
 
       // 2. Insert into main ledger
       const insertLedger = db.prepare(`
-        INSERT INTO main_ledger (name, entry_type, ref_id, total_remaining)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO main_ledger (name, entry_type, ref_id, total_remaining, created_at)
+        VALUES (?, ?, ?, ?, ?)
       `);
-      insertLedger.run(name, 'income', newId, 0);
+      insertLedger.run(name, 'income', newId, 0, timestamp);
 
       // 3. Recalculate all ledger running balances
       recalculateLedger();

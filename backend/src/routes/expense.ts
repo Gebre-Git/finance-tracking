@@ -11,7 +11,7 @@ const EXPENSE_TYPES = [
 
 // POST /api/expense - Add expense entry + ledger row
 router.post('/', (req: Request, res: Response) => {
-  const { name, amount, planned, type, description } = req.body;
+  const { name, amount, planned, type, description, created_at } = req.body;
 
   if (!name || amount === undefined || !type) {
     return res.status(400).json({ error: 'Name, amount, and type are required' });
@@ -21,23 +21,25 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ error: `Invalid type. Must be one of: ${EXPENSE_TYPES.join(', ')}` });
   }
 
+  const timestamp = created_at ? new Date(created_at).toISOString() : new Date().toISOString();
+
   try {
     const expenseId = runInTransaction(() => {
       // 1. Insert expense
       const insertExpense = db.prepare(`
-        INSERT INTO expense (name, amount, planned, type, description)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO expense (name, amount, planned, type, description, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
       const isPlanned = planned ? 1 : 0;
-      const result = insertExpense.run(name, Number(amount), isPlanned, type, description || null) as any;
+      const result = insertExpense.run(name, Number(amount), isPlanned, type, description || null, timestamp) as any;
       const newId = Number(result.lastInsertRowid);
 
       // 2. Insert into main ledger
       const insertLedger = db.prepare(`
-        INSERT INTO main_ledger (name, entry_type, ref_id, total_remaining)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO main_ledger (name, entry_type, ref_id, total_remaining, created_at)
+        VALUES (?, ?, ?, ?, ?)
       `);
-      insertLedger.run(name, 'expense', newId, 0);
+      insertLedger.run(name, 'expense', newId, 0, timestamp);
 
       // 3. Recalculate
       recalculateLedger();

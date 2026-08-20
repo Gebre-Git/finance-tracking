@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, PlanningItem } from '../api';
 import FilterBar, { FilterColumn } from '../components/FilterBar';
-import { Plus, X, Trash2, Edit3 } from 'lucide-react';
+import { Plus, X, Trash2, Edit3, GripVertical } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const BUDGET_TYPES = [
@@ -20,6 +20,9 @@ export default function PlanningPage() {
 
   // Delete Confirmation State
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+
+  // Drag and drop state
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -209,6 +212,7 @@ export default function PlanningPage() {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-border text-muted font-semibold text-xs">
+                  <th className="pb-3 font-semibold w-8"></th>
                   <th className="pb-3 font-semibold">Name</th>
                   <th className="pb-3 font-semibold">Target Range</th>
                   <th className="pb-3 font-semibold">Type</th>
@@ -219,8 +223,43 @@ export default function PlanningPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {budgets.map(item => (
-                  <tr key={item.id} className="hover:bg-neutral-50/50 transition">
+                {budgets.map((item, index) => (
+                  <tr 
+                    key={item.id} 
+                    className={`hover:bg-neutral-50/50 transition duration-150 ${
+                      draggedIndex === index ? 'opacity-30 bg-neutral-100/50' : ''
+                    }`}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedIndex(index);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedIndex === null || draggedIndex === index) return;
+                      
+                      const reordered = [...budgets];
+                      const [draggedItem] = reordered.splice(draggedIndex, 1);
+                      reordered.splice(index, 0, draggedItem);
+                      
+                      // Optimistic state update
+                      setBudgets(reordered);
+                      setDraggedIndex(null);
+                      
+                      const ids = reordered.map(x => x.id);
+                      api.reorderPlanning(ids)
+                        .catch(err => {
+                          alert(err.message || 'Failed to save reorder');
+                          fetchBudgets();
+                        });
+                    }}
+                  >
+                    <td className="py-3.5 pr-2 pl-0 text-neutral-300 hover:text-neutral-500 cursor-grab active:cursor-grabbing transition duration-150 text-center select-none">
+                      <GripVertical className="w-4 h-4 mx-auto" />
+                    </td>
                     <td className="py-3.5 font-medium text-neutral-800">{item.name}</td>
                     <td className="py-3.5 font-bold text-neutral-700 font-mono">
                       {item.amount_min.toLocaleString()} – {item.amount_max.toLocaleString()} ETB
@@ -245,7 +284,7 @@ export default function PlanningPage() {
                         }`}
                         title="Click to toggle status (Waiting / Done)"
                       >
-                        {item.status === 'done' ? '✅ Done' : 'Waiting'}
+                        {item.status === 'done' ? 'Done' : 'Waiting'}
                       </button>
                     </td>
                     <td className="py-3.5 text-neutral-500 text-xs max-w-[250px] truncate">
