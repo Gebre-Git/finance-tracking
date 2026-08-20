@@ -6,6 +6,7 @@ import expenseRouter from './routes/expense';
 import ledgerRouter from './routes/ledger';
 import summaryRouter from './routes/summary';
 import planningRouter from './routes/planning';
+import exportRouter from './routes/export';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +24,7 @@ app.use('/api/expense', expenseRouter);
 app.use('/api/ledger', ledgerRouter);
 app.use('/api', summaryRouter); // Mounts /api/summary and /api/charts
 app.use('/api/planning', planningRouter);
+app.use('/api/export', exportRouter);
 
 // Healthcheck
 app.get('/health', (req, res) => {

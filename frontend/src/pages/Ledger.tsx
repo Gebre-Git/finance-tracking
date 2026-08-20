@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { api, LedgerRow } from '../api';
 import FilterBar, { FilterColumn } from '../components/FilterBar';
-import { ArrowUpRight, ArrowDownRight, Eye, Calendar } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Eye, Calendar, Download } from 'lucide-react';
 
 interface LedgerPageProps {
   onViewLedgerDetail: (id: number) => void;
@@ -88,9 +88,19 @@ export default function LedgerPage({
     <div className="flex flex-col gap-6">
 
       {/* Page Header */}
-      <div>
-        <h2 className="text-lg font-bold tracking-tight text-neutral-800">Unified Ledger</h2>
-        <p className="text-xs text-muted">A sequential transaction log detailing running balance histories</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-neutral-800">Unified Ledger</h2>
+          <p className="text-xs text-muted">A sequential transaction log detailing running balance histories</p>
+        </div>
+
+        <button
+          onClick={() => window.open('/api/export/csv', '_blank')}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-neutral-50 border border-border rounded-lg text-xs font-semibold text-neutral-800 transition cursor-pointer shadow-xs"
+        >
+          <Download className="w-3.5 h-3.5 text-accent" />
+          <span>Export CSV</span>
+        </button>
       </div>
 
       {/* Filter and Date-Range Section */}

@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
   ArrowUpRight, 
   ArrowDownRight, 
   FileText, 
   CalendarRange, 
-  Compass 
+  Compass,
+  Download
 } from 'lucide-react';
+import ExportModal from './ExportModal';
 
 interface LayoutProps {
   currentTab: string;
@@ -16,6 +18,8 @@ interface LayoutProps {
 }
 
 export default function Layout({ currentTab, setCurrentTab, children, runningBalance }: LayoutProps) {
+  const [showExportModal, setShowExportModal] = useState(false);
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'income', label: 'Income', icon: ArrowUpRight },
@@ -82,14 +86,29 @@ export default function Layout({ currentTab, setCurrentTab, children, runningBal
           <h1 className="text-xl font-bold tracking-tight capitalize">
             {currentTab === 'timely' ? 'Timely View' : currentTab}
           </h1>
-          <div className="text-xs text-muted bg-neutral-100 border border-border px-3 py-1.5 rounded-full font-medium">
-            Local SQLite DB
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 border border-border rounded-lg text-xs font-semibold text-neutral-800 transition cursor-pointer shadow-xs"
+            >
+              <Download className="w-3.5 h-3.5 text-accent" />
+              <span>Export Data</span>
+            </button>
+            <div className="text-xs text-muted bg-neutral-100 border border-border px-3 py-1.5 rounded-full font-medium">
+              JSON DB
+            </div>
           </div>
         </header>
         <div className="p-8 flex-1">
           {children}
         </div>
       </main>
+
+      {/* Export Modal */}
+      <ExportModal 
+        isOpen={showExportModal} 
+        onClose={() => setShowExportModal(false)} 
+      />
     </div>
   );
 }

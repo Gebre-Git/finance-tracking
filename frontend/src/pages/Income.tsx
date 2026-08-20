@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, Income } from '../api';
 import FilterBar, { FilterColumn } from '../components/FilterBar';
-import { Plus, X, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, X, Trash2, ArrowRight, Download } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 
 interface IncomePageProps {
@@ -125,16 +125,26 @@ export default function IncomePage({ onHighlightLedgerRow, onRefreshTrigger }: I
           <p className="text-xs text-muted">Manage all salary, dividends, and household cash influx</p>
         </div>
 
-        <button
-          onClick={() => {
-            setCreatedAt(getTodayDateTimeString());
-            setShowAddForm(true);
-          }}
-          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-sm font-semibold transition cursor-pointer shadow-premium"
-        >
-          <Plus className="w-4.5 h-4.5" />
-          <span>New Entry</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.open('/api/export/income/csv', '_blank')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-neutral-50 border border-border rounded-lg text-sm font-semibold text-neutral-800 transition cursor-pointer shadow-xs"
+          >
+            <Download className="w-4 h-4 text-accent" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setCreatedAt(getTodayDateTimeString());
+              setShowAddForm(true);
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-sm font-semibold transition cursor-pointer shadow-premium"
+          >
+            <Plus className="w-4.5 h-4.5" />
+            <span>New Entry</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}
