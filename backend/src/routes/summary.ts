@@ -3,6 +3,13 @@ import db from '../db';
 
 const router = Router();
 
+// Savings account → main account transfers are named "saving" (case-insensitive).
+// They increase the running balance (handled by the ledger) but must NOT count
+// toward income totals — they are not real income, just a fund transfer.
+function isSavingTransfer(name: string): boolean {
+  return name?.trim().toLowerCase() === 'saving';
+}
+
 // Helper to get week start date (Monday)
 function getStartOfWeek(dateStr: string): string {
   const date = new Date(dateStr);
@@ -58,6 +65,7 @@ function getGroupedData(period: string) {
 
   let overallIncome = 0;
   let overallExpense = 0;
+  let overallSaving = 0; // saving transfers: increase balance but not income
 
   for (const entry of rawEntries) {
     let key = '';
@@ -88,14 +96,21 @@ function getGroupedData(period: string) {
     }
 
     if (entry.entry_type === 'income') {
-      groups[key].total_income += entry.amount;
-      overallIncome += entry.amount;
+      // Saving transfers are balance top-ups from a savings account — not real income.
+      // They still affect the net balance via the ledger but are excluded from income stats.
+      if (!isSavingTransfer(entry.name)) {
+        groups[key].total_income += entry.amount;
+        overallIncome += entry.amount;
+      } else {
+        overallSaving += entry.amount;
+      }
+      // Net cash flow for this period includes saving transfers (money is still in hand)
+      groups[key].net += entry.amount;
     } else {
       groups[key].total_expense += entry.amount;
       overallExpense += entry.amount;
+      groups[key].net -= entry.amount;
     }
-    
-    groups[key].net = groups[key].total_income - groups[key].total_expense;
     groups[key].entries.push(entry);
   }
 
@@ -103,10 +118,31 @@ function getGroupedData(period: string) {
   const sortedPeriods = Object.keys(groups).sort();
   const entriesList = sortedPeriods.map(key => groups[key]);
 
+  // ─── Old-data correction ────────────────────────────────────────────────────
+  // Before the new saving system existed, transfers TO savings were recorded as
+  // expenses. The money returned FROM savings was recorded as income (type='saving')
+  // and ignored from income totals — but it was then spent again as a real expense,
+  // causing the same money to be counted as expense TWICE.
+  //
+  // Fix: sum all income entries with type='saving'. Each one represents money that
+  // was originally double-counted as expense (once when sent to savings, once when
+  // spent after being returned). Subtracting this total from overallExpense removes
+  // the first (wrong) expense recording, leaving only the final real spend.
+  //
+  // This correction ONLY affects old income records with type='saving'.
+  // The new saving[] table (used by /api/saving) is never touched here.
+  const allIncomeRows = db.prepare('SELECT * FROM income').all() as any[];
+  const oldSavingCorrectionAmount = allIncomeRows
+    .filter(i => i.type === 'saving')
+    .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+
+  const correctedExpense = Math.max(0, overallExpense - oldSavingCorrectionAmount);
+
   return {
     overallIncome,
-    overallExpense,
-    overallNet: overallIncome - overallExpense,
+    overallExpense: correctedExpense,
+    // Net balance includes saving transfers since cash is available in main account
+    overallNet: overallIncome + overallSaving - correctedExpense,
     entriesList
   };
 }

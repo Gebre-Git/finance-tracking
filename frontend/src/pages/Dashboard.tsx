@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { api, SummaryResponse, ChartResponse, LedgerRow } from '../api';
 import SummaryCards from '../components/SummaryCards';
 import DashboardChart from '../components/DashboardChart';
+import SavingPanel from '../components/SavingPanel';
 import { ArrowUpRight, ArrowDownRight, Eye } from 'lucide-react';
 
 interface DashboardProps {
   onViewLedgerDetail: (id: number) => void;
   triggerRefresh: boolean;
+  onRefreshTrigger?: () => void;
 }
 
-export default function Dashboard({ onViewLedgerDetail, triggerRefresh }: DashboardProps) {
+export default function Dashboard({ onViewLedgerDetail, triggerRefresh, onRefreshTrigger }: DashboardProps) {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [chartData, setChartData] = useState<ChartResponse | null>(null);
@@ -162,6 +164,9 @@ export default function Dashboard({ onViewLedgerDetail, triggerRefresh }: Dashbo
           </div>
         )}
       </div>
+
+      {/* Saving Account Panel */}
+      <SavingPanel triggerRefresh={triggerRefresh} onRefresh={onRefreshTrigger || (() => {})} />
     </div>
   );
 }

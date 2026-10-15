@@ -70,10 +70,12 @@ export default function IncomePage({ onHighlightLedgerRow, onRefreshTrigger }: I
     if (!name.trim()) return setFormError('Name is required');
     if (!amount || Number(amount) <= 0) return setFormError('Amount must be positive');
 
+    const isSaving = name.trim().toLowerCase() === 'saving';
+
     api.addIncome({
       name,
       amount: Number(amount),
-      type,
+      type: isSaving ? ('saving' as any) : type,
       source: source.trim() || undefined,
       created_at: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString()
     })
@@ -247,9 +249,16 @@ export default function IncomePage({ onHighlightLedgerRow, onRefreshTrigger }: I
                 />
               </div>
 
+              {/* Saving Transfer Banner */}
+              {name.trim().toLowerCase() === 'saving' && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-xs font-medium leading-relaxed">
+                  💰 <strong>Savings Transfer detected.</strong> This will increase your main balance but will <em>not</em> be counted as income — keeping your income stats accurate.
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1">
-                  Date & Time <span className="text-[10px] text-neutral-400 font-normal lowercase">(defaults to now/today)</span>
+                  Date &amp; Time <span className="text-[10px] text-neutral-400 font-normal lowercase">(defaults to now/today)</span>
                 </label>
                 <input 
                   type="datetime-local" 
@@ -270,17 +279,20 @@ export default function IncomePage({ onHighlightLedgerRow, onRefreshTrigger }: I
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1">Income Type</label>
-                <select 
-                  value={type} 
-                  onChange={(e) => setType(e.target.value as any)}
-                  className="w-full text-sm px-3 py-2 bg-neutral-50 border border-border rounded-lg focus:outline-none focus:border-accent font-medium"
-                >
-                  <option value="work">Work</option>
-                  <option value="family">Family</option>
-                </select>
-              </div>
+              {/* Income Type — hidden for saving transfers */}
+              {name.trim().toLowerCase() !== 'saving' && (
+                <div>
+                  <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1">Income Type</label>
+                  <select 
+                    value={type} 
+                    onChange={(e) => setType(e.target.value as any)}
+                    className="w-full text-sm px-3 py-2 bg-neutral-50 border border-border rounded-lg focus:outline-none focus:border-accent font-medium"
+                  >
+                    <option value="work">Work</option>
+                    <option value="family">Family</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-1">Source / Note</label>

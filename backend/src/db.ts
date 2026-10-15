@@ -12,6 +12,7 @@ interface Schema {
   expense: any[];
   main_ledger: any[];
   planning: any[];
+  saving: any[];
 }
 
 // Load and save JSON wrappers
@@ -23,10 +24,12 @@ function loadData(): Schema {
       // Ignore parse errors, return empty schema
     }
   }
-  return { income: [], expense: [], main_ledger: [], planning: [] };
+  return { income: [], expense: [], main_ledger: [], planning: [], saving: [] };
 }
 
 function saveData(data: Schema) {
+  // Ensure saving array exists for backward compatibility with older JSON files
+  if (!data.saving) data.saving = [];
   fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
 }
 
@@ -227,6 +230,29 @@ class Statement {
       return { changes: 1 };
     }
 
+    if (sqlLower.includes('insert into saving')) {
+      const [label, amount, direction, created_at] = params;
+      if (!data.saving) data.saving = [];
+      const newId = data.saving.length > 0 ? Math.max(...data.saving.map((s: any) => s.id)) + 1 : 1;
+      data.saving.push({
+        id: newId,
+        label: label || null,
+        amount: Number(amount),
+        direction, // 'deposit' | 'withdrawal'
+        created_at: created_at || new Date().toISOString()
+      });
+      saveData(data);
+      return { lastInsertRowid: newId, changes: 1 };
+    }
+
+    if (sqlLower.includes('delete from saving')) {
+      const [id] = params;
+      if (!data.saving) data.saving = [];
+      data.saving = data.saving.filter((s: any) => s.id !== id);
+      saveData(data);
+      return { changes: 1 };
+    }
+
     return { changes: 0 };
   }
 
@@ -272,6 +298,7 @@ class Statement {
         const exp = data.expense.find(e => e.id === l.ref_id);
         return {
           id: l.id,
+          name: l.name, // required so isSavingTransfer() can identify balance-only transfers in summary
           created_at: l.created_at,
           entry_type: l.entry_type,
           ref_id: l.ref_id,
@@ -333,6 +360,16 @@ class Statement {
           return new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id;
         }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || b.id - a.id;
+      });
+    }
+
+    if (sqlLower.includes('from saving')) {
+      const result = [...(data.saving || [])];
+      return result.sort((a: any, b: any) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return b.id - a.id;
       });
     }
 

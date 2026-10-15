@@ -72,6 +72,19 @@ export interface ChartResponse {
   net: number[];
 }
 
+export interface SavingEntry {
+  id: number;
+  label: string | null;
+  amount: number;
+  direction: 'deposit' | 'withdrawal';
+  created_at: string;
+}
+
+export interface SavingResponse {
+  balance: number;
+  transactions: SavingEntry[];
+}
+
 const API_BASE = '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -169,6 +182,28 @@ export const api = {
     return request<{ success: boolean; message: string }>('/planning/reorder', {
       method: 'POST',
       body: JSON.stringify({ ids }),
+    });
+  },
+
+  // Saving APIs
+  getSaving: () => {
+    return request<SavingResponse>('/saving');
+  },
+  depositToSaving: (payload: { amount: number; label?: string; created_at?: string }) => {
+    return request<SavingEntry & { balance: number }>('/saving/deposit', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  withdrawFromSaving: (payload: { amount: number; label?: string; created_at?: string }) => {
+    return request<SavingEntry & { balance: number }>('/saving/withdrawal', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  deleteSaving: (id: number) => {
+    return request<{ success: boolean; message: string; balance: number }>(`/saving/${id}`, {
+      method: 'DELETE',
     });
   },
 };

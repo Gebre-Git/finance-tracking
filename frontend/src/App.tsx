@@ -74,6 +74,7 @@ export default function App() {
           <Dashboard 
             onViewLedgerDetail={setSelectedLedgerId}
             triggerRefresh={refreshTrigger}
+            onRefreshTrigger={triggerRefresh}
           />
         )}
         {currentTab === 'income' && (
@@ -111,6 +112,10 @@ export default function App() {
         <DetailModal 
           ledgerId={selectedLedgerId}
           onClose={() => setSelectedLedgerId(null)}
+          onDeleteSuccess={() => {
+            triggerRefresh();
+            setSelectedLedgerId(null);
+          }}
         />
       )}
     </>

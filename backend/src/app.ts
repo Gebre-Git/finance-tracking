@@ -7,6 +7,7 @@ import ledgerRouter from './routes/ledger';
 import summaryRouter from './routes/summary';
 import planningRouter from './routes/planning';
 import exportRouter from './routes/export';
+import savingRouter from './routes/saving';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use('/api/ledger', ledgerRouter);
 app.use('/api', summaryRouter); // Mounts /api/summary and /api/charts
 app.use('/api/planning', planningRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/saving', savingRouter);
 
 // Healthcheck
 app.get('/health', (req, res) => {

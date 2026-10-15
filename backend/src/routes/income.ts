@@ -4,16 +4,29 @@ import { recalculateLedger } from '../utils/ledger';
 
 const router = Router();
 
+// Savings account → main account transfers are named "saving" (case-insensitive).
+// They are stored in the income table for ledger ref_id purposes, but are excluded
+// from income listings and totals — they're balance top-ups, not real income.
+function isSavingTransfer(name: string): boolean {
+  return name?.trim().toLowerCase() === 'saving';
+}
+
 // POST /api/income - Add income entry + ledger row
 router.post('/', (req: Request, res: Response) => {
   const { name, amount, type, source, created_at } = req.body;
 
-  if (!name || amount === undefined || !type) {
-    return res.status(400).json({ error: 'Name, amount, and type are required' });
+  if (!name || amount === undefined) {
+    return res.status(400).json({ error: 'Name and amount are required' });
   }
 
-  if (type !== 'family' && type !== 'work') {
-    return res.status(400).json({ error: 'Invalid type. Must be either family or work' });
+  // Saving transfers don't need a type — they are neither "family" nor "work" income
+  if (!isSavingTransfer(name)) {
+    if (!type) {
+      return res.status(400).json({ error: 'Name, amount, and type are required' });
+    }
+    if (type !== 'family' && type !== 'work') {
+      return res.status(400).json({ error: 'Invalid type. Must be either family or work' });
+    }
   }
 
   const timestamp = created_at ? new Date(created_at).toISOString() : new Date().toISOString();
@@ -25,7 +38,9 @@ router.post('/', (req: Request, res: Response) => {
         INSERT INTO income (name, amount, type, source, created_at)
         VALUES (?, ?, ?, ?, ?)
       `);
-      const result = insertIncome.run(name, Number(amount), type, source || null, timestamp) as any;
+      // Use 'saving' as the type for saving transfers (they bypass family/work validation)
+      const effectiveType = isSavingTransfer(name) ? 'saving' : type;
+      const result = insertIncome.run(name, Number(amount), effectiveType, source || null, timestamp) as any;
       const newId = Number(result.lastInsertRowid);
 
       // 2. Insert into main ledger
@@ -81,12 +96,13 @@ router.get('/', (req: Request, res: Response) => {
 
     query += ' ORDER BY id DESC';
 
-    const rows = db.prepare(query).all(...params);
+    const rows = db.prepare(query).all(...params) as any[];
     res.json(rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // DELETE /api/income/:id
 router.delete('/:id', (req: Request, res: Response) => {

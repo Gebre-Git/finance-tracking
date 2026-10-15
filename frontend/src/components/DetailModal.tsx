@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, DollarSign, Tag, Info, AlertCircle, Bookmark } from 'lucide-react';
+import { X, Calendar, DollarSign, Tag, Info, AlertCircle, Bookmark, Trash2 } from 'lucide-react';
 import { api, LedgerDetail } from '../api';
 
 interface DetailModalProps {
   ledgerId: number | null;
   onClose: () => void;
+  onDeleteSuccess?: () => void;
 }
 
-export default function DetailModal({ ledgerId, onClose }: DetailModalProps) {
+export default function DetailModal({ ledgerId, onClose, onDeleteSuccess }: DetailModalProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<LedgerDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!ledgerId) return;
@@ -152,6 +154,41 @@ export default function DetailModal({ ledgerId, onClose }: DetailModalProps) {
                   </span>
                 </div>
 
+              </div>
+
+              {/* Delete Action Section */}
+              <div className="pt-4 border-t border-border mt-4">
+                <button
+                  disabled={isDeleting}
+                  onClick={() => {
+                    if (!data.detail) return;
+                    if (window.confirm('Are you sure you want to delete this transaction? The ledger will adjust automatically.')) {
+                      setIsDeleting(true);
+                      const deletePromise = data.entry_type === 'income' 
+                        ? api.deleteIncome(data.detail.id)
+                        : api.deleteExpense(data.detail.id);
+                        
+                      deletePromise
+                        .then(() => {
+                          if (onDeleteSuccess) onDeleteSuccess();
+                          else onClose();
+                        })
+                        .catch(err => {
+                          console.error(err);
+                          alert(err.message || 'Failed to delete transaction');
+                          setIsDeleting(false);
+                        });
+                    }
+                  }}
+                  className={`w-full py-2.5 flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                    isDeleting 
+                      ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
+                      : 'bg-red-50 hover:bg-red-100 text-red-600'
+                  }`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? 'Deleting...' : 'Delete Transaction'}
+                </button>
               </div>
 
             </div>
