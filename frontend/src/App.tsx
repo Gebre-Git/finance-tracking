@@ -25,17 +25,11 @@ export default function App() {
     setRefreshTrigger(prev => !prev);
   };
 
-  // Keep running balance updated
+  // Keep running balance updated (mirrors main account net balance)
   useEffect(() => {
-    api.getLedger()
+    api.getSummary('monthly')
       .then(res => {
-        if (res.length > 0) {
-          // Since the ledger is sorted descending (id DESC) by the backend,
-          // the first entry represents the latest transaction state
-          setRunningBalance(res[0].total_remaining);
-        } else {
-          setRunningBalance(0);
-        }
+        setRunningBalance(res.net);
       })
       .catch(err => {
         console.error('Failed to update running balance:', err);

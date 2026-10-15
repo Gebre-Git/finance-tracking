@@ -114,6 +114,52 @@ function getGroupedData(period: string) {
     groups[key].entries.push(entry);
   }
 
+  // ─── Incorporate Saving Account Transfers ────────────────────────────────────
+  // Deposits move money from main account into savings (reducing main account net).
+  // Withdrawals return money from savings into main account (increasing main account net).
+  // Neither affects total_income or total_expense.
+  const savingTransactions = (db.prepare('SELECT * FROM saving').all() as any[]) || [];
+  let currentSavingBalance = 0;
+
+  for (const st of savingTransactions) {
+    const amt = Number(st.amount) || 0;
+    if (st.direction === 'deposit') {
+      currentSavingBalance += amt;
+    } else if (st.direction === 'withdrawal') {
+      currentSavingBalance -= amt;
+    }
+
+    let dateStr = st.created_at;
+    if (dateStr && dateStr.includes(' ') && !dateStr.includes('T')) {
+      dateStr = dateStr.replace(' ', 'T') + 'Z';
+    }
+
+    let key = '';
+    if (period === 'weekly') {
+      key = getStartOfWeek(dateStr);
+    } else if (period === 'monthly') {
+      key = getStartOfMonth(dateStr);
+    } else {
+      key = getStartOfDay(dateStr);
+    }
+
+    if (!groups[key]) {
+      groups[key] = {
+        period: key,
+        total_income: 0,
+        total_expense: 0,
+        net: 0,
+        entries: []
+      };
+    }
+
+    if (st.direction === 'deposit') {
+      groups[key].net -= amt;
+    } else if (st.direction === 'withdrawal') {
+      groups[key].net += amt;
+    }
+  }
+
   // Sort groups chronologically
   const sortedPeriods = Object.keys(groups).sort();
   const entriesList = sortedPeriods.map(key => groups[key]);
@@ -141,8 +187,12 @@ function getGroupedData(period: string) {
   return {
     overallIncome,
     overallExpense: correctedExpense,
-    // Net balance includes saving transfers since cash is available in main account
-    overallNet: overallIncome + overallSaving - correctedExpense,
+    // Net balance = main account balance only.
+    // We subtract currentSavingBalance because saving deposits move money OUT
+    // of the main account into the savings account. It's not an expense, but
+    // the main account balance is reduced. Withdrawals from savings return money
+    // to main account, so they reduce currentSavingBalance and increase net.
+    overallNet: overallIncome - correctedExpense - currentSavingBalance,
     entriesList
   };
 }
